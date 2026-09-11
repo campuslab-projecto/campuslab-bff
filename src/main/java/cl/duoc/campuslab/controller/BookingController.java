@@ -21,7 +21,7 @@ public class BookingController {
     private final RestClient restClient;
 
     public BookingController(RestClient.Builder builder,
-                             @Value("${campuslab.services.bookings-url}") String bookingsUrl) {
+                             @Value("${services.bookings.url}") String bookingsUrl) {
         this.restClient = builder.baseUrl(bookingsUrl).build();
     }
 
