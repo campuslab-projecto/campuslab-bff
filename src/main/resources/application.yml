@@ -4,9 +4,17 @@ server:
 spring:
   application:
     name: ms-campuslab-bff
+
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: https://login.microsoftonline.com/902cf874-0ee4-4917-b9cb-6b55af9993be/v2.0
-          audiences: 36ccc99d-6294-4333-a064-d62fa6237c7c
+
+campuslab:
+  security:
+    audience: 36ccc99d-6294-4333-a064-d62fa6237c7c
+
+services:
+  bookings:
+    url: ${BOOKINGS_SERVICE_URL:http://localhost:8081}
