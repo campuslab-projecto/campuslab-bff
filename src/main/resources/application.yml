@@ -3,8 +3,6 @@ server:
 
 spring:
   application:
-
-    name: campuslab-bff
     name: ms-campuslab-bff
 
   security:
@@ -15,10 +13,7 @@ spring:
 
 campuslab:
   security:
-
-    audience: api://36ccc99d-6294-4333-a064-d62fa6237c7c/access_as_user
-
-    audience: 36ccc99d-6294-4333-a064-d62fa6237c7c
+    audience: api://36ccc99d-6294-4333-a064-d62fa6237c7c
 
 services:
   bookings:

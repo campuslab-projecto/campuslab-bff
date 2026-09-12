@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/api/bookings/**").hasAnyRole("ADMIN", "TECNICO", "ESTUDIANTE")
+                        .requestMatchers("/api/bookings/**").authenticated()
                         .requestMatchers("/api/catalog/**").hasAnyRole("ADMIN", "TECNICO")
                         .requestMatchers("/api/report/**").hasRole("ADMIN")
                         .requestMatchers("/api/audit/**").hasAnyRole("ADMIN", "AUDITOR")
@@ -57,17 +57,9 @@ public class SecurityConfig {
     @Bean
     public JwtDecoder jwtDecoder() {
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
-
-        OAuth2TokenValidator<Jwt> issuerValidator =
-                JwtValidators.createDefaultWithIssuer(issuerUri);
-
-        OAuth2TokenValidator<Jwt> audienceValidator =
-                new AudienceValidator(audience);
-
-        jwtDecoder.setJwtValidator(
-                new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator)
-        );
-
+        OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(issuerUri);
+        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(audience);
+        jwtDecoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator));
         return jwtDecoder;
     }
 
@@ -81,7 +73,6 @@ public class SecurityConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-
         return source;
     }
 }
