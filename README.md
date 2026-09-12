@@ -1,65 +1,154 @@
-# ms-campuslab-bff
+# campuslab-bff
 
-Backend For Frontend de CampusLab. Recibe las llamadas del frontend Angular y las reenvía al microservicio de reservas.
+Backend For Frontend del sistema CampusLab, desarrollado con Spring Boot y Spring Security.
 
-## Tecnologías
+## Descripción
 
-- Java 17
+Este componente funciona como punto de entrada protegido para el frontend Angular.  
+El BFF recibe las peticiones desde el frontend, valida el JWT emitido por Azure AD y redirige las solicitudes hacia los microservicios de dominio.
+
+En el caso CampusLab, el flujo seguro definido es:
+
+```text
+JWT → API Gateway → ms-campuslab-bff → microservicio de dominio
+```
+
+## Tecnologías utilizadas
+
+- Java
 - Spring Boot
 - Spring Security
 - OAuth2 Resource Server
-- JWT Azure AD / Microsoft Entra ID
-- RestClient
+- JWT
+- Azure AD
+- Docker
+- Docker Hub
+- GitHub
 
-## Funcionalidades EP1
+## Responsabilidad del servicio
 
-- Valida access tokens emitidos por Azure AD.
-- Valida `issuer`.
-- Valida `audience` mediante `AudienceValidator`.
-- Valida firma y expiración mediante OAuth2 Resource Server.
-- Convierte roles de Azure AD a authorities de Spring Security.
-- Aplica autorización por rol en endpoints.
-- Responde `401` cuando no existe token o el token es inválido.
-- Responde `403` cuando el token es válido, pero el usuario no tiene rol suficiente.
-- Expone endpoints proxy hacia `ms-campuslab-bookings`.
+- Validar tokens JWT emitidos por Azure AD.
+- Verificar autenticación antes de permitir el acceso a endpoints protegidos.
+- Actuar como intermediario entre frontend y microservicios.
+- Redirigir solicitudes hacia `ms-campuslab-bookings`.
+- Responder con códigos adecuados ante accesos no autorizados.
 
-## Configuración
+## Seguridad
 
-Archivo: `src/main/resources/application.yml`
+El BFF utiliza Spring Security como Resource Server OAuth2.
+
+Configuración principal:
 
 ```yaml
-server:
-  port: 8080
-
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://login.microsoftonline.com/<TENANT_ID>/v2.0
-
-campuslab:
-  security:
-    audience: <API_CLIENT_ID>
-  services:
-    bookings-url: http://localhost:8081
+          issuer-uri: https://login.microsoftonline.com/902cf874-0ee4-4917-b9cb-6b55af9993be/v2.0
 ```
 
-## Endpoints
+Audience configurada:
 
-- `GET /api/bookings`
-- `POST /api/bookings`
-- `GET /api/bookings/{id}`
-- `PUT /api/bookings/{id}/status`
+```yaml
+campuslab:
+  security:
+    audience: api://36ccc99d-6294-4333-a064-d62fa6237c7c/access_as_user
+```
 
-## Ejecutar localmente
+## Variables de entorno
+
+| Variable | Descripción | Valor local |
+|---|---|---|
+| `BOOKINGS_SERVICE_URL` | URL del microservicio de reservas | `http://localhost:8081` |
+
+En Docker Compose se usa comunicación interna:
+
+```text
+http://campuslab-ms-bookings:8081
+```
+
+## Endpoints expuestos
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | `/api/bookings` | Lista reservas |
+| GET | `/api/bookings/{id}` | Obtiene una reserva por ID |
+| POST | `/api/bookings` | Crea una reserva |
+| PUT | `/api/bookings/{id}/status` | Actualiza estado de reserva |
+
+## Ejecución local
 
 ```bash
 mvn spring-boot:run
 ```
 
-El BFF queda disponible en:
+Puerto local:
 
 ```text
 http://localhost:8080
 ```
+
+## Ejecución con Docker
+
+Construir imagen:
+
+```bash
+docker build -t campuslab-bff .
+```
+
+Ejecutar contenedor:
+
+```bash
+docker run --name campuslab-bff -p 8080:8080 -e BOOKINGS_SERVICE_URL=http://host.docker.internal:8081 campuslab-bff
+```
+
+## Imagen Docker Hub
+
+```text
+lukmezac/campuslab-bff:latest
+```
+
+Para descargar la imagen:
+
+```bash
+docker pull lukmezac/campuslab-bff:latest
+```
+
+## Evidencia esperada
+
+Sin token:
+
+```bash
+curl http://localhost:8080/api/bookings
+```
+
+Respuesta esperada:
+
+```text
+401 Unauthorized
+```
+
+Con token válido desde Angular:
+
+```text
+200 OK
+```
+
+## Flujo de comunicación
+
+```text
+Angular Frontend → campuslab-bff → campuslab-ms-bookings
+```
+
+## Gestión del proyecto
+
+Este repositorio se gestiona mediante GitHub Projects y metodología Kanban.
+
+Flujo utilizado:
+
+```text
+Issue → Rama feature → Commit → Pull Request → Revisión → Merge a main
+```
+
+La rama `main` se mantiene protegida y los cambios se integran mediante Pull Request.
