@@ -3,6 +3,7 @@ package cl.duoc.campuslab.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -38,8 +39,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/api/bookings/**").authenticated()
+                        .requestMatchers("/api/bookings", "/api/bookings/**").authenticated()
                         .requestMatchers("/api/catalog/**").hasAnyRole("ADMIN", "TECNICO")
                         .requestMatchers("/api/report/**").hasRole("ADMIN")
                         .requestMatchers("/api/audit/**").hasAnyRole("ADMIN", "AUDITOR")
@@ -57,22 +59,48 @@ public class SecurityConfig {
     @Bean
     public JwtDecoder jwtDecoder() {
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
-        OAuth2TokenValidator<Jwt> issuerValidator = JwtValidators.createDefaultWithIssuer(issuerUri);
-        OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(audience);
-        jwtDecoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator));
+
+        OAuth2TokenValidator<Jwt> issuerValidator =
+                JwtValidators.createDefaultWithIssuer(issuerUri);
+
+        OAuth2TokenValidator<Jwt> audienceValidator =
+                new AudienceValidator(audience);
+
+        jwtDecoder.setJwtValidator(
+                new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator)
+        );
+
         return jwtDecoder;
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+
+        config.setAllowedOrigins(List.of(
+                "http://localhost:4200",
+                "https://main.d35pphk36jv08s.amplifyapp.com"
+        ));
+
+        config.setAllowedMethods(List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "OPTIONS"
+        ));
+
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept"
+        ));
+
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
+
         return source;
     }
 }
