@@ -1,3 +1,4 @@
+
 server:
   port: 8080
 
@@ -13,8 +14,14 @@ spring:
 
 campuslab:
   security:
-    audience: api://36ccc99d-6294-4333-a064-d62fa6237c7c
+    audience: 36ccc99d-6294-4333-a064-d62fa6237c7c
 
 services:
   bookings:
     url: ${BOOKINGS_SERVICE_URL:http://localhost:8081}
+
+  rabbit-admin:
+    url: ${RABBIT_ADMIN_SERVICE_URL:http://localhost:8082}
+
+  audit:
+    url: ${AUDIT_SERVICE_URL:http://localhost:8084}

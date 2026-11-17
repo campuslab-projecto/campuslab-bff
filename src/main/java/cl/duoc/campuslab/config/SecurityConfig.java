@@ -1,21 +1,27 @@
+
 package cl.duoc.campuslab.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.oauth2.server.resource.web.access.BearerTokenAccessDeniedHandler;
+
 import org.springframework.security.web.SecurityFilterChain;
+
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -33,24 +39,140 @@ public class SecurityConfig {
     private String audience;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http)
+            throws Exception {
+
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(
+                        corsConfigurationSource()
+                ))
+
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                .sessionManagement(sm ->
+                        sm.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/api/bookings", "/api/bookings/**").authenticated()
-                        .requestMatchers("/api/catalog/**").hasAnyRole("ADMIN", "TECNICO")
-                        .requestMatchers("/api/report/**").hasRole("ADMIN")
-                        .requestMatchers("/api/audit/**").hasAnyRole("ADMIN", "AUDITOR")
+
+                        // CORS
+                        .requestMatchers(
+                                HttpMethod.OPTIONS, "/**"
+                        ).permitAll()
+
+                        // HEALTH CHECK
+                        .requestMatchers(
+                                "/actuator/health"
+                        ).permitAll()
+
+                        // =====================================
+                        // RESERVAS
+                        // =====================================
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/bookings",
+                                "/api/bookings/**"
+                        ).hasAnyRole(
+                                "ESTUDIANTE",
+                                "TECNICO",
+                                "ADMIN"
+                        )
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/bookings"
+                        ).hasAnyRole(
+                                "ESTUDIANTE",
+                                "TECNICO",
+                                "ADMIN"
+                        )
+
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/bookings/*/status"
+                        ).hasAnyRole(
+                                "TECNICO",
+                                "ADMIN"
+                        )
+
+                        .requestMatchers(
+                                "/api/bookings",
+                                "/api/bookings/**"
+                        ).denyAll()
+
+                        // =====================================
+                        // ADMINISTRACIÓN RABBITMQ
+                        // SOLO ADMIN
+                        // =====================================
+
+                        .requestMatchers(
+                                "/api/rabbit",
+                                "/api/rabbit/**"
+                        ).hasRole("ADMIN")
+
+                        // =====================================
+                        // CATÁLOGO
+                        // =====================================
+
+                        .requestMatchers(
+                                "/api/catalog",
+                                "/api/catalog/**"
+                        ).hasAnyRole(
+                                "ADMIN",
+                                "TECNICO"
+                        )
+
+                        // =====================================
+                        // REPORTES
+                        // =====================================
+
+                        .requestMatchers(
+                                "/api/report",
+                                "/api/report/**"
+                        ).hasRole("ADMIN")
+
+                        // =====================================
+                        // AUDITORÍA
+                        // =====================================
+
+                        .requestMatchers(
+                                "/api/audit",
+                                "/api/audit/**"
+                        ).hasAnyRole(
+                                "ADMIN",
+                                "AUDITOR"
+                        )
+
+                        // =====================================
+                        // FUTURA ADMINISTRACIÓN KAFKA
+                        // SOLO ADMIN
+                        // =====================================
+
+                        .requestMatchers(
+                                "/api/kafka",
+                                "/api/kafka/**"
+                        ).hasRole("ADMIN")
+
+                        // Resto de las rutas
                         .anyRequest().authenticated()
                 )
+
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(new AzureRolesConverter()))
-                        .authenticationEntryPoint(new BearerTokenAuthenticationEntryPoint())
-                        .accessDeniedHandler(new BearerTokenAccessDeniedHandler())
+
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(
+                                new AzureRolesConverter()
+                        ))
+
+                        .authenticationEntryPoint(
+                                new BearerTokenAuthenticationEntryPoint()
+                        )
+
+                        .accessDeniedHandler(
+                                new BearerTokenAccessDeniedHandler()
+                        )
                 );
 
         return http.build();
@@ -58,16 +180,25 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
+
+        NimbusJwtDecoder jwtDecoder =
+                NimbusJwtDecoder.withIssuerLocation(
+                        issuerUri
+                ).build();
 
         OAuth2TokenValidator<Jwt> issuerValidator =
-                JwtValidators.createDefaultWithIssuer(issuerUri);
+                JwtValidators.createDefaultWithIssuer(
+                        issuerUri
+                );
 
         OAuth2TokenValidator<Jwt> audienceValidator =
                 new AudienceValidator(audience);
 
         jwtDecoder.setJwtValidator(
-                new DelegatingOAuth2TokenValidator<>(issuerValidator, audienceValidator)
+                new DelegatingOAuth2TokenValidator<>(
+                        issuerValidator,
+                        audienceValidator
+                )
         );
 
         return jwtDecoder;
@@ -75,7 +206,9 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
+
+        CorsConfiguration config =
+                new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
                 "http://localhost:4200",
@@ -98,8 +231,13 @@ public class SecurityConfig {
 
         config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+                "/**",
+                config
+        );
 
         return source;
     }
