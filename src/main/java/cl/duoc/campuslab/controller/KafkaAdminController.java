@@ -60,7 +60,17 @@ public class KafkaAdminController {
     }
 
     // =====================================
-    // 4. REENVIAR PETICIONES GET
+    // 4. MONITOREAR OFFSETS DLT
+    // =====================================
+
+    @GetMapping("/dlt/offsets")
+    public ResponseEntity<?> getDltOffsets() {
+
+        return forwardGet("/api/kafka/dlt/offsets");
+    }
+
+    // =====================================
+    // 5. REENVIAR PETICIONES GET
     // =====================================
 
     private ResponseEntity<?> forwardGet(String path) {
@@ -86,7 +96,7 @@ public class KafkaAdminController {
     }
 
     // =====================================
-    // 5. REENVIAR GET CON PARAMETRO
+    // 6. REENVIAR GET CON PARAMETRO
     // =====================================
 
     private ResponseEntity<?> forwardGet(
