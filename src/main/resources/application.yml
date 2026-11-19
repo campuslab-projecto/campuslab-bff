@@ -25,3 +25,6 @@ services:
 
   audit:
     url: ${AUDIT_SERVICE_URL:http://localhost:8084}
+
+  kafka-admin:
+    url: ${KAFKA_ADMIN_SERVICE_URL:http://localhost:8086}
