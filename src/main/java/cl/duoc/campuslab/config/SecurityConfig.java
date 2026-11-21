@@ -57,12 +57,18 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
 
-                        // CORS
+                        // =====================================
+                        // SOLICITUDES CORS
+                        // =====================================
+
                         .requestMatchers(
                                 HttpMethod.OPTIONS, "/**"
                         ).permitAll()
 
+                        // =====================================
                         // HEALTH CHECK
+                        // =====================================
+
                         .requestMatchers(
                                 "/actuator/health"
                         ).permitAll()
@@ -104,8 +110,7 @@ public class SecurityConfig {
                         ).denyAll()
 
                         // =====================================
-                        // ADMINISTRACIÓN RABBITMQ
-                        // SOLO ADMIN
+                        // ADMINISTRACION RABBITMQ
                         // =====================================
 
                         .requestMatchers(
@@ -114,7 +119,7 @@ public class SecurityConfig {
                         ).hasRole("ADMIN")
 
                         // =====================================
-                        // CATÁLOGO
+                        // CATALOGO
                         // =====================================
 
                         .requestMatchers(
@@ -135,7 +140,7 @@ public class SecurityConfig {
                         ).hasRole("ADMIN")
 
                         // =====================================
-                        // AUDITORÍA
+                        // AUDITORIA
                         // =====================================
 
                         .requestMatchers(
@@ -147,8 +152,8 @@ public class SecurityConfig {
                         )
 
                         // =====================================
-                        // FUTURA ADMINISTRACIÓN KAFKA
-                        // SOLO ADMIN
+                        // ADMINISTRACION KAFKA
+                        // SOLO ADMINISTRADORES
                         // =====================================
 
                         .requestMatchers(
@@ -156,7 +161,10 @@ public class SecurityConfig {
                                 "/api/kafka/**"
                         ).hasRole("ADMIN")
 
-                        // Resto de las rutas
+                        // =====================================
+                        // RESTO DE SOLICITUDES
+                        // =====================================
+
                         .anyRequest().authenticated()
                 )
 
@@ -177,6 +185,10 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+    // ==========================================
+    // VALIDACION JWT
+    // ==========================================
 
     @Bean
     public JwtDecoder jwtDecoder() {
@@ -204,21 +216,31 @@ public class SecurityConfig {
         return jwtDecoder;
     }
 
+    // ==========================================
+    // CONFIGURACION CORS
+    // ==========================================
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration config =
                 new CorsConfiguration();
 
+        // Origenes autorizados de CampusLab.
+
         config.setAllowedOrigins(List.of(
                 "http://localhost:4200",
                 "https://main.d35pphk36jv08s.amplifyapp.com"
         ));
 
+        // Metodos HTTP permitidos.
+        // PATCH permite aumentar particiones Kafka.
+
         config.setAllowedMethods(List.of(
                 "GET",
                 "POST",
                 "PUT",
+                "PATCH",
                 "DELETE",
                 "OPTIONS"
         ));
